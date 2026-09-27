@@ -1,5 +1,5 @@
 "use client";
-import { DndContext, DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDraggable, useDroppable } from "@dnd-kit/core";
 import { useTasks, type Task } from "@/lib/useTasks";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { WarningModal } from "@/components/WarningModal";
@@ -29,6 +29,13 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type FullTask = Task & {
+  assignee?: string | null;
+  statusChangedAt?: string;
+  durationDays: number;
+  unmetPrerequisites?: string[];
+};
+
 function TaskCard({
   task,
   onDeleteClick,
@@ -36,18 +43,13 @@ function TaskCard({
   onLinkClick,
   onSuggestClick,
 }: {
-  task: Task & {
-    assignee?: string | null;
-    statusChangedAt?: string;
-    durationDays: number;
-    unmetPrerequisites?: string[];
-  };
+  task: FullTask;
   onDeleteClick: (id: string, title: string) => void;
   onSimulateClick: (task: Task) => void;
   onLinkClick: (task: Task) => void;
   onSuggestClick: (task: Task) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
   const [showReasons, setShowReasons] = useState(false);
   const blocked = task.status === "backlog" && !task.ready;
 
@@ -56,42 +58,46 @@ function TaskCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      style={{ transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined }}
+      style={{
+        transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
+        opacity: isDragging ? 0.3 : 1, // original spot fades while the DragOverlay clone shows on top
+      }}
       className="p-3 mb-3 rounded-lg bg-[#2D2D2D] border border-[#3A3A3A] cursor-grab hover:border-[#4A4A4A] transition-colors group relative"
     >
-      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onSuggestClick(task)}
-          className="text-[#6B7280] hover:text-[#FF6C37] text-xs"
-          title="AI suggestions"
-        >
-          🤖
-        </button>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onSimulateClick(task)}
-          className="text-[#6B7280] hover:text-[#FF6C37] text-xs"
-          title="Change duration"
-        >
-          ⏱
-        </button>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onLinkClick(task)}
-          className="text-[#6B7280] hover:text-[#FF6C37] text-xs"
-          title="Add prerequisite"
-        >
-          🔗
-        </button>
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => onDeleteClick(task.id, task.title)}
-          className="text-[#6B7280] hover:text-[#DC2626] text-xs"
-        >
-          ✕
-        </button>
-      </div>
+     <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+  <button
+    onPointerDown={(e) => e.stopPropagation()}
+    onClick={() => onSuggestClick(task)}
+    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
+    title="AI suggestions"
+  >
+    🤖
+  </button>
+  <button
+    onPointerDown={(e) => e.stopPropagation()}
+    onClick={() => onSimulateClick(task)}
+    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
+    title="Change duration"
+  >
+    ⏱
+  </button>
+  <button
+    onPointerDown={(e) => e.stopPropagation()}
+    onClick={() => onLinkClick(task)}
+    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
+    title="Add prerequisite"
+  >
+    🔗
+  </button>
+  <button
+    onPointerDown={(e) => e.stopPropagation()}
+    onClick={() => onDeleteClick(task.id, task.title)}
+    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#DC2626] hover:bg-[#3A1F1F] transition-colors"
+    title="Delete task"
+  >
+    ✕
+  </button>
+</div>
 
       <div className="text-[#ECECEC] text-sm font-medium mb-2 pr-16">{task.title}</div>
 
@@ -136,6 +142,33 @@ function TaskCard({
   );
 }
 
+// Simplified static clone shown in the DragOverlay — no drag listeners, no buttons, just the visual.
+function OverlayCard({ task }: { task: FullTask }) {
+  const blocked = task.status === "backlog" && !task.ready;
+  return (
+    <div className="p-3 rounded-lg bg-[#2D2D2D] border border-[#FF6C37] shadow-2xl w-[240px] cursor-grabbing">
+      <div className="text-[#ECECEC] text-sm font-medium mb-2">{task.title}</div>
+      {blocked && (
+        <span className="inline-block px-2 py-0.5 mb-2 rounded text-xs bg-[#3A2A1F] text-[#FF9F6B] border border-[#5A3A26]">
+          Blocked ({task.unmetPrerequisites?.length ?? 0})
+        </span>
+      )}
+      <div className="flex items-center justify-between mt-2">
+        {task.assignee ? (
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-[#FF6C37] text-white text-[10px] flex items-center justify-center font-medium">
+              {initials(task.assignee)}
+            </div>
+            <span className="text-xs text-[#9CA3AF]">{task.assignee}</span>
+          </div>
+        ) : (
+          <span />
+        )}
+      </div>
+    </div>
+  );
+}
+
 function Column({
   id,
   label,
@@ -151,7 +184,7 @@ function Column({
   label: string;
   dot: string;
   wipLimit?: number;
-  tasks: Task[];
+  tasks: FullTask[];
   onDeleteClick: (id: string, title: string) => void;
   onSimulateClick: (task: Task) => void;
   onLinkClick: (task: Task) => void;
@@ -197,6 +230,7 @@ export default function BoardPage() {
   const [suggestTask, setSuggestTask] = useState<Task | null>(null);
   const [healthSummary, setHealthSummary] = useState<string | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   async function loadHealthSummary() {
     setHealthLoading(true);
@@ -206,7 +240,12 @@ export default function BoardPage() {
     setHealthLoading(false);
   }
 
+  function handleDragStart(event: DragStartEvent) {
+    setActiveId(event.active.id as string);
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    setActiveId(null);
     const { active, over } = event;
     if (!over) return;
     const task = tasks.find((t) => t.id === active.id);
@@ -229,6 +268,8 @@ export default function BoardPage() {
   }
 
   if (loading) return <p className="p-4 text-[#9CA3AF]">Loading...</p>;
+
+  const activeTask = tasks.find((t) => t.id === activeId) as FullTask | undefined;
 
   return (
     <div className="min-h-screen bg-[#1E1E1E] p-6">
@@ -253,13 +294,13 @@ export default function BoardPage() {
         {healthSummary && <p className="text-xs text-[#9CA3AF] italic">{healthSummary}</p>}
       </div>
 
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-4">
           {COLUMNS.map((col) => (
             <Column
               key={col.id}
               {...col}
-              tasks={tasks.filter((t) => t.status === col.id)}
+              tasks={tasks.filter((t) => t.status === col.id) as FullTask[]}
               onDeleteClick={(id, title) => setPendingDelete({ id, title })}
               onSimulateClick={(task) => setSimulateTask(task)}
               onLinkClick={(task) => setLinkTask(task)}
@@ -267,6 +308,7 @@ export default function BoardPage() {
             />
           ))}
         </div>
+        <DragOverlay>{activeTask ? <OverlayCard task={activeTask} /> : null}</DragOverlay>
       </DndContext>
 
       {warning && (
