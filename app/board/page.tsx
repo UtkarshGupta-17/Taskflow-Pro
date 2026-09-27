@@ -283,16 +283,40 @@ export default function BoardPage() {
         <AddTaskModal onCreated={refresh} />
       </div>
 
-      <div className="mb-6 flex items-center gap-2">
-        <button
-          onClick={loadHealthSummary}
-          disabled={healthLoading}
-          className="text-xs px-2 py-1 rounded border border-[#3A3A3A] text-[#9CA3AF] hover:text-[#ECECEC] disabled:opacity-50"
-        >
-          {healthLoading ? "Analyzing..." : "🤖 Project health"}
-        </button>
-        {healthSummary && <p className="text-xs text-[#9CA3AF] italic">{healthSummary}</p>}
+     <div className="mb-6">
+  {!healthSummary ? (
+    <button
+      onClick={loadHealthSummary}
+      disabled={healthLoading}
+      className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#FF6C37] to-[#e85f2e] text-white text-sm font-medium shadow-lg shadow-[#FF6C37]/20 hover:shadow-[#FF6C37]/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:hover:scale-100"
+    >
+      {healthLoading ? (
+        <>
+          <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          Analyzing project...
+        </>
+      ) : (
+        <>🤖 Check Project Health</>
+      )}
+    </button>
+  ) : (
+    <div className="flex items-start gap-3 p-4 rounded-lg bg-gradient-to-r from-[#3A2A1F] to-[#2D2D2D] border border-[#5A3A26]">
+      <span className="text-lg">🤖</span>
+      <div className="flex-1">
+        <p className="text-xs text-[#FF9F6B] font-semibold uppercase tracking-wide mb-1">Project Health</p>
+        <p className="text-sm text-[#ECECEC]">{healthSummary}</p>
       </div>
+      <button
+        onClick={loadHealthSummary}
+        disabled={healthLoading}
+        className="text-xs text-[#9CA3AF] hover:text-[#FF6C37] transition-colors disabled:opacity-50"
+        title="Refresh"
+      >
+        {healthLoading ? "..." : "↻"}
+      </button>
+    </div>
+  )}
+</div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-4">
