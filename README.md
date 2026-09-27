@@ -119,6 +119,14 @@ Manual dependency tracking (spreadsheets, tribal knowledge) causes two costly fa
 
 - **Recompute scope:** schedule/ready-state recompute currently runs across the whole task set on each change; fine at this scale (single digits to low hundreds of tasks), but would need to be scoped to the affected downstream subtree for much larger graphs.
 
+
+## Known Failure Cases
+
+- If the Groq API is unreachable or returns an error, AI suggestion generation and the project-health summary fail gracefully (return an empty list / a fallback message) rather than crashing the request — but no retry or fallback provider is implemented.
+- Two users editing the same task's duration simultaneously is not conflict-resolved; the last write wins, since this is explicitly a single-user design (see Limitations).
+- The graph view's layered layout does not handle a very large number of tasks at one depth gracefully — cards would overlap vertically beyond roughly 8–10 nodes at the same dependency depth.
+- The AI suggestion prompt is bounded by the model's context window; with a very large task list, the full candidate list might not fit and would need truncation (currently unbounded, untested at large scale).
+
 ## Demo Walkthrough
 
 A few specific things worth trying that demonstrate the hardest requirements directly:
