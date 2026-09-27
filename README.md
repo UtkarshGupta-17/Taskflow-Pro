@@ -67,6 +67,18 @@ This project uses the Groq API (`openai/gpt-oss-20b`) for three features, all gr
 
 Claude (Anthropic) was used throughout development as a pair-programming assistant — for planning the architecture, writing and debugging code, and diagnosing environment/dependency issues (e.g. Prisma version conflicts, a Groq model deprecation encountered mid-build).
 
+
+
+## Business Impact & Scalability
+
+Manual dependency tracking (spreadsheets, tribal knowledge) causes two costly failure modes this project directly eliminates: teams starting work that is actually blocked, and schedule slippage going unnoticed until it surfaces at integration. Both are addressed structurally, not just by convention — status is derived live from the graph rather than manually maintained, so it cannot silently drift out of date.
+
+**Scalability:** the propagation engine runs in O(V+E) time via a single topological pass, which comfortably handles graphs of hundreds of tasks on each change. At significantly larger scale, the main change needed is scoping recomputation to the affected downstream subtree rather than the whole graph — the current implementation recomputes globally for simplicity, which is the right tradeoff at this scale but the first thing to optimize beyond it.
+
+**Reusability:** `lib/dag-engine.ts` has zero dependencies on Prisma, Next.js, or React — it is a portable module that could sit behind a different API layer, a different database, or even a different frontend framework without modification. The same is true of the AI grounding pattern (whitelist validation + cycle re-check before any suggestion is trusted), which generalizes to any AI-assisted feature where a model's output needs to be checked against a system of record before being trusted.
+
+**Multi-user path:** explicitly out of scope for this sprint (see Limitations), but the API layer and engine are already stateless per request, so the primary additions needed to support it are auth middleware and a sync mechanism (polling or WebSockets) — not a redesign of the core logic.
+
 ## Key Assumptions & Limitations
 
 - **Single-user, no authentication** — multi-user conflict resolution is out of scope for this sprint. The API layer and DAG engine are stateless per-request, so adding auth middleware and either polling or WebSocket-based sync would be the main additions needed to support it later.
