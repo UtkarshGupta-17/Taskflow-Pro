@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskStatus {
+  backlog
+  in_progress
+  review
+  done
+}
+
+enum SuggestionStatus {
+  pending
+  accepted
+  rejected
+}
+
+model Task {
+  id              String     @id @default(cuid())
+  title           String
+  description     String?
+  status          TaskStatus @default(backlog)
+  assignee        String?
+  startDate       DateTime
+  durationDays    Int        @default(1)
+  statusChangedAt DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  outgoing Dependency[] @relation("predecessor")
+  incoming Dependency[] @relation("successor")
+  suggestions DependencySuggestion[]
+}
+
+model Dependency {
+  id            String @id @default(cuid())
+  predecessorId String
+  successorId   String
+  predecessor   Task   @relation("predecessor", fields: [predecessorId], references: [id], onDelete: Cascade)
+  successor     Task   @relation("successor", fields: [successorId], references: [id], onDelete: Cascade)
+
+  @@unique([predecessorId, successorId])
+}
+
+model DependencySuggestion {
+  id                     String           @id @default(cuid())
+  taskId                 String
+  task                   Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  suggestedPredecessorId String
+  confidence             Float
+  rationale              String
+  status                 SuggestionStatus @default(pending)
+  createdAt              DateTime         @default(now())
+}
