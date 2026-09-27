@@ -60,44 +60,44 @@ function TaskCard({
       {...attributes}
       style={{
         transform: transform ? `translate(${transform.x}px, ${transform.y}px)` : undefined,
-        opacity: isDragging ? 0.3 : 1, // original spot fades while the DragOverlay clone shows on top
+        opacity: isDragging ? 0.3 : 1,
       }}
       className="p-3 mb-3 rounded-lg bg-[#2D2D2D] border border-[#3A3A3A] cursor-grab hover:border-[#4A4A4A] transition-colors group relative"
     >
-     <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-  <button
-    onPointerDown={(e) => e.stopPropagation()}
-    onClick={() => onSuggestClick(task)}
-    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
-    title="AI suggestions"
-  >
-    🤖
-  </button>
-  <button
-    onPointerDown={(e) => e.stopPropagation()}
-    onClick={() => onSimulateClick(task)}
-    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
-    title="Change duration"
-  >
-    ⏱
-  </button>
-  <button
-    onPointerDown={(e) => e.stopPropagation()}
-    onClick={() => onLinkClick(task)}
-    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
-    title="Add prerequisite"
-  >
-    🔗
-  </button>
-  <button
-    onPointerDown={(e) => e.stopPropagation()}
-    onClick={() => onDeleteClick(task.id, task.title)}
-    className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#DC2626] hover:bg-[#3A1F1F] transition-colors"
-    title="Delete task"
-  >
-    ✕
-  </button>
-</div>
+      <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onSuggestClick(task)}
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
+          title="AI suggestions"
+        >
+          🤖
+        </button>
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onSimulateClick(task)}
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
+          title="Change duration"
+        >
+          ⏱
+        </button>
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onLinkClick(task)}
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#FF6C37] hover:bg-[#3A2A1F] transition-colors"
+          title="Add prerequisite"
+        >
+          🔗
+        </button>
+        <button
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => onDeleteClick(task.id, task.title)}
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-[#1E1E1E] border border-[#3A3A3A] text-xs hover:border-[#DC2626] hover:bg-[#3A1F1F] transition-colors"
+          title="Delete task"
+        >
+          ✕
+        </button>
+      </div>
 
       <div className="text-[#ECECEC] text-sm font-medium mb-2 pr-16">{task.title}</div>
 
@@ -142,7 +142,6 @@ function TaskCard({
   );
 }
 
-// Simplified static clone shown in the DragOverlay — no drag listeners, no buttons, just the visual.
 function OverlayCard({ task }: { task: FullTask }) {
   const blocked = task.status === "backlog" && !task.ready;
   return (
@@ -276,47 +275,52 @@ export default function BoardPage() {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <h1 className="text-[#ECECEC] text-lg font-semibold">TaskFlow Pro</h1>
-          <Link href="/board/graph" className="text-xs text-[#FF6C37] hover:underline">
-            View Graph →
+          <Link
+            href="/board/graph"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2D2D2D] border border-[#3A3A3A] text-sm text-[#ECECEC] hover:border-[#8B7FE8] hover:bg-[#2A2740] hover:text-[#8B7FE8] hover:scale-[1.03] active:scale-[0.98] transition-all group"
+          >
+            <span>🕸️</span>
+            View Graph
+            <span className="transition-transform group-hover:translate-x-0.5">→</span>
           </Link>
         </div>
         <AddTaskModal onCreated={refresh} />
       </div>
 
-     <div className="mb-6">
-  {!healthSummary ? (
-    <button
-      onClick={loadHealthSummary}
-      disabled={healthLoading}
-      className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#FF6C37] to-[#e85f2e] text-white text-sm font-medium shadow-lg shadow-[#FF6C37]/20 hover:shadow-[#FF6C37]/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:hover:scale-100"
-    >
-      {healthLoading ? (
-        <>
-          <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-          Analyzing project...
-        </>
-      ) : (
-        <>🤖 Check Project Health</>
-      )}
-    </button>
-  ) : (
-    <div className="flex items-start gap-3 p-4 rounded-lg bg-gradient-to-r from-[#3A2A1F] to-[#2D2D2D] border border-[#5A3A26]">
-      <span className="text-lg">🤖</span>
-      <div className="flex-1">
-        <p className="text-xs text-[#FF9F6B] font-semibold uppercase tracking-wide mb-1">Project Health</p>
-        <p className="text-sm text-[#ECECEC]">{healthSummary}</p>
+      <div className="mb-6">
+        {!healthSummary ? (
+          <button
+            onClick={loadHealthSummary}
+            disabled={healthLoading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-[#FF6C37] to-[#e85f2e] text-white text-sm font-medium shadow-lg shadow-[#FF6C37]/20 hover:shadow-[#FF6C37]/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:hover:scale-100"
+          >
+            {healthLoading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Analyzing project...
+              </>
+            ) : (
+              <>🤖 Check Project Health</>
+            )}
+          </button>
+        ) : (
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-gradient-to-r from-[#3A2A1F] to-[#2D2D2D] border border-[#5A3A26]">
+            <span className="text-lg">🤖</span>
+            <div className="flex-1">
+              <p className="text-xs text-[#FF9F6B] font-semibold uppercase tracking-wide mb-1">Project Health</p>
+              <p className="text-sm text-[#ECECEC]">{healthSummary}</p>
+            </div>
+            <button
+              onClick={loadHealthSummary}
+              disabled={healthLoading}
+              className="text-xs text-[#9CA3AF] hover:text-[#FF6C37] transition-colors disabled:opacity-50"
+              title="Refresh"
+            >
+              {healthLoading ? "..." : "↻"}
+            </button>
+          </div>
+        )}
       </div>
-      <button
-        onClick={loadHealthSummary}
-        disabled={healthLoading}
-        className="text-xs text-[#9CA3AF] hover:text-[#FF6C37] transition-colors disabled:opacity-50"
-        title="Refresh"
-      >
-        {healthLoading ? "..." : "↻"}
-      </button>
-    </div>
-  )}
-</div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex gap-4">
